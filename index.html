@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NNSC Bracket</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --accent: #00b894;
+            --accent-hover: #55efc4;
+            --text-main: #ffffff;
+            --text-sub: #b2bec3;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem;
+        }
+        h1 { margin: 0; font-size: 3rem; text-transform: uppercase; letter-spacing: 4px; color: var(--accent); }
+        .subtitle { color: var(--text-sub); margin-top: 10px; font-weight: bold; }
+
+        #menu-container, #bracket-container, #winner-container {
+            width: 90%;
+            max-width: 1000px;
+            text-align: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .hidden { display: none !important; }
+
+        .btn {
+            background-color: var(--accent);
+            color: #2d3436;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 5px;
+            transition: transform 0.2s, background-color 0.2s;
+            text-transform: uppercase;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            background-color: var(--accent-hover);
+        }
+        .btn-small { padding: 10px 20px; font-size: 1rem; background-color: #636e72; color: white; }
+
+        .matchup-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .vs-text { font-size: 2rem; font-weight: bold; color: var(--accent); }
+
+        .player-card {
+            background-color: var(--card-bg);
+            border: 2px solid #444;
+            border-radius: 12px;
+            padding: 30px 20px;
+            width: 280px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .player-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 184, 148, 0.2);
+        }
+
+        .player-role {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .player-name { font-size: 1.6rem; font-weight: bold; }
+
+        .round-info { margin-top: 30px; font-size: 1.2rem; color: var(--text-sub); }
+
+        .winner-card {
+            background: linear-gradient(135deg, #00b894, #0984e3);
+            padding: 40px;
+            border-radius: 20px;
+            margin: 0 auto;
+            max-width: 400px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .winner-title { font-size: 1.2rem; text-transform: uppercase; margin-bottom: 10px; color: rgba(255,255,255,0.8); }
+        .winner-name { font-size: 3rem; font-weight: 800; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        @media (max-width: 700px) {
+            .matchup-area { flex-direction: column; }
+            .vs-text { margin: 10px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>NNSC</h1>
+        <div class="subtitle">Official Team Tournament</div>
+    </header>
+
+    <div id="menu-container">
+        <h2>Select a Category</h2>
+        <div id="category-buttons" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;"></div>
+        <div style="margin-top:30px;">
+            <button class="btn btn-small" onclick="startGame('Random')">🎲 Random Category</button>
+        </div>
+    </div>
+
+    <div id="bracket-container" class="hidden">
+        <h2 id="current-prompt-display" style="color:var(--accent); font-size: 2rem; text-transform: uppercase;">CATEGORY</h2>
+        <div class="round-info" id="round-indicator">Round 1</div>
+        <div class="matchup-area">
+            <div class="player-card" id="card-left" onclick="pickWinner('left')">
+                <div class="player-role" id="role-left">ROLE</div>
+                <div class="player-name" id="name-left">NAME</div>
+            </div>
+            <div class="vs-text">VS</div>
+            <div class="player-card" id="card-right" onclick="pickWinner('right')">
+                <div class="player-role" id="role-right">ROLE</div>
+                <div class="player-name" id="name-right">NAME</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="winner-container" class="hidden">
+        <h2>👑 The Winner 👑</h2>
+        <div class="winner-card">
+            <div class="winner-title" id="winner-category">Category</div>
+            <div class="winner-name" id="winner-name">Name</div>
+        </div>
+        <br><br>
+        <button class="btn" onclick="location.reload()">New Category</button>
+    </div>
+
+    <script>
+        const players = [
+            { name: "angelolee1919", role: "Goalkeeper" },
+            { name: "Tyranizard89", role: "Goalkeeper" },
+            { name: "TG37074", role: "Goalkeeper" },
+            { name: "dvrianz", role: "Defender" },
+            { name: "NETHQES2", role: "Defender" },
+            { name: "J0ffPerc", role: "Defender" },
+            { name: "EnesxRlo", role: "Defender" },
+            { name: "E_MiIitao", role: "Defender" },
+            { name: "mageman5304", role: "Defender" },
+            { name: "15Goalies", role: "Defender" },
+            { name: "CristianoRonaldo9604", role: "Defender" },
+            { name: "floatzp", role: "Defender" },
+            { name: "Selim1Zain", role: "Defender" },
+            { name: "JellozBenz", role: "Midfielder" },
+            { name: "Fafumz", role: "Midfielder" },
+            { name: "Xalaawm321", role: "Midfielder" },
+            { name: "kenenmusss", role: "Midfielder" },
+            { name: "ElTatoYorugua", role: "Midfielder" },
+            { name: "petnilongo3", role: "Midfielder" },
+            { name: "Aegisrs", role: "Midfielder" },
+            { name: "1300Melvin", role: "Attacker" },
+            { name: "nascarremy16", role: "Attacker" },
+            { name: "CheekyBritishPerson1", role: "Attacker" },
+            { name: "iHyperReal", role: "Attacker" },
+            { name: "psychx777", role: "Attacker" },
+            { name: "Salomaoarruda", role: "Attacker" },
+            { name: "realzvn", role: "Attacker" }
+        ];
+
+        const prompts = [
+            "Best Dribbler", "Best Finisher", "Best Shooter", "Best Defender", "Best Goalkeeper", 
+            "Best Passer", "Best Playmaker", "Best Stamina", "Best IQ", "Best Free Kicks", 
+            "Best Corners", "Best Headers", "Best Tackler", "Best Captain", "Best Team Player", 
+            "Best Carrier", "Most Underrated", "Most Overrated", "Rage Quitter", 
+            "Laggiest Player", "Worst Finisher", "Worst Defender", "Worst GK", "Worst Dribbler", 
+            "Best Clutcher", "Worst Ping", "Most Reliable", "Goal Machine", "Brick Wall", 
+            "Ankle Breaker", "Hidden Talent", "Best Vision", "Worst Chemistry", "Most Lost Player", 
+            "Easiest to Dribble", "Hardest to Guard", "Biggest Seller"
+        ];
+
+        let currentPrompt = "";
+        let tournamentRound = [];
+        let nextRoundWinners = [];
+        let currentMatchIndex = 0;
+        let activeLeftPlayer = null;
+        let activeRightPlayer = null;
+
+        window.onload = function() {
+            const btnContainer = document.getElementById('category-buttons');
+            prompts.sort().forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerText = p;
+                btn.onclick = () => startGame(p);
+                btnContainer.appendChild(btn);
+            });
+        };
+
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function startGame(category) {
+            currentPrompt = category === 'Random' ? prompts[Math.floor(Math.random() * prompts.length)] : category;
+            tournamentRound = shuffle([...players]); 
+            nextRoundWinners = [];
+            currentMatchIndex = 0;
+            document.getElementById('menu-container').classList.add('hidden');
+            document.getElementById('bracket-container').classList.remove('hidden');
+            document.getElementById('current-prompt-display').innerText = currentPrompt;
+            loadMatch();
+        }
+
+        function loadMatch() {
+            if (currentMatchIndex >= tournamentRound.length - 1) {
+                if (currentMatchIndex === tournamentRound.length - 1) {
+                    nextRoundWinners.push(tournamentRound[currentMatchIndex]);
+                }
+                if (nextRoundWinners.length === 1) {
+                    showWinner(nextRoundWinners[0]);
+                    return;
+                }
+                tournamentRound = [...nextRoundWinners];
+                nextRoundWinners = [];
+                currentMatchIndex = 0;
+                let roundName = tournamentRound.length <= 2 ? "GRAND FINAL" : 
+                                tournamentRound.length <= 4 ? "Semi-Finals" : 
+                                `Round of ${tournamentRound.length}`;
+                document.getElementById('round-indicator').innerText = roundName;
+            }
+            activeLeftPlayer = tournamentRound[currentMatchIndex];
+            activeRightPlayer = tournamentRound[currentMatchIndex + 1];
+            document.getElementById('role-left').innerText = activeLeftPlayer.role;
+            document.getElementById('name-left').innerText = activeLeftPlayer.name;
+            document.getElementById('role-right').innerText = activeRightPlayer.role;
+            document.getElementById('name-right').innerText = activeRightPlayer.name;
+        }
+
+        function pickWinner(side) {
+            nextRoundWinners.push(side === 'left' ? activeLeftPlayer : activeRightPlayer);
+            currentMatchIndex += 2;
+            loadMatch();
+        }
+
+        function showWinner(player) {
+            document.getElementById('bracket-container').classList.add('hidden');
+            document.getElementById('winner-container').classList.remove('hidden');
+            document.getElementById('winner-category').innerText = currentPrompt;
+            document.getElementById('winner-name').innerText = player.name;
+            confettiEffect();
+        }
+
+        function confettiEffect() {
+            const colors = ['#00b894', '#0984e3', '#fdcb6e', '#e17055'];
+            for(let i=0; i<100; i++) {
+                const div = document.createElement('div');
+                div.style.position = 'fixed';
+                div.style.left = Math.random() * 100 + 'vw';
+                div.style.top = '-10px';
+                div.style.width = '10px';
+                div.style.height = '10px';
+                div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                div.style.transition = 'top 2s ease-in, transform 2s ease';
+                div.style.zIndex = '9999';
+                document.body.appendChild(div);
+                setTimeout(() => {
+                    div.style.top = '110vh';
+                    div.style.transform = `rotate(${Math.random() * 360}deg)`;
+                }, 100);
+            }
+        }
+    </script>
+</body>
+</html>
